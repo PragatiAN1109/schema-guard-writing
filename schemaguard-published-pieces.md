@@ -76,6 +76,16 @@ None of these stages ask the language model to evaluate itself. The logic is ext
 
 ---
 
+**Inside the Rule Engine — How a Constraint Actually Fires**
+
+The semantic validator is the layer that catches what schema validation cannot. Here is exactly what happens when a record arrives and a rule fires — from field extraction through to the audit log entry written on the other side.
+
+![SchemaGuard Rule Engine — Step by Step](rule_engine_svg.svg)
+
+*Step 1: fields are extracted from the incoming record. Step 2: the rule registry matches the field set to the relevant constraint. Step 3: the rule is evaluated as a deterministic binary check — true or false, no interpretation. Step 4: the decision, the fields involved, the values, and the confidence score are written to a structured audit log. If the record fails, it routes to quarantine with a full explanation attached.*
+
+---
+
 The system makes no promise that language models can be made perfectly reliable. It makes a narrower claim: that structured outputs consumed by production systems deserve the same rigorous compliance layer applied to any other data pipeline, and that this layer can be built with discipline, evaluated honestly, and deployed before someone's record becomes a data point that should never have existed.
 
 The pipeline doesn't stop the model from being wrong. It stops the wrongness from going unnoticed.
