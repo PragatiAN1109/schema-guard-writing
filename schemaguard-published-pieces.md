@@ -32,7 +32,7 @@ This is the failure mode that current tooling is not built to catch. Standard sc
 
 **The Gemini Test**
 
-The intuitive response is to instruct the model more carefully. Write a better prompt. Add a line that says *ensure all dates are logically consistent*. Chain a second AI call to review the first. These are reasonable instincts, and they will catch some errors, but they cannot catch all of them, and in systems where compliance is a requirement rather than a preference, "some" is not a number that survives a regulatory audit.
+The intuitive response is to instruct the model more carefully. Write a better prompt. Add a line that says *ensure all dates are logically consistent*. Chain a second AI call to review the first. These are reasonable instincts, and they will catch some errors, but they cannot catch all of them. In systems where compliance is a requirement rather than a preference, "some" is not a number that survives a regulatory audit.
 
 A language model asked to verify its own output is still a language model: a probabilistic system running over the same learned patterns that produced the error in the first place. A subtle inconsistency, one that falls within the model's sense of what plausible data looks like, will pass self-review precisely because the model does not experience it as inconsistent. The verification call is not a logic layer. It is another sampling step from the same distribution. You are not adding determinism. You are adding another roll of a weighted die.
 
@@ -70,17 +70,17 @@ For a general reader: Think of it as a quality-control
 checkpoint between "AI produced it" and "we act on it."
 ```
 
-The first check confirms structural correctness, what existing validation tools already do. The second applies hand-authored logical rules to catch cross-field violations like the date problem above: deterministic binary checks that either pass or fail. The third, the drift detector, works like a control chart in a factory: it keeps a record of what normal output has looked like over time, then raises a flag when the current batch starts looking meaningfully different. If a model is quietly updated, or a prompt is changed, or the temperature setting drifts, the outputs shift in ways no individual record would reveal. The drift detector catches the pattern across records that individual validation cannot see. The fourth aggregates these signals into a confidence score, routing records below threshold into a quarantine queue rather than passing them downstream unchecked. Every decision, pass, flag, or quarantine, is logged with a full explanation: which rule fired, which fields were involved, and what the conflict was.
+The first check confirms structural correctness, what existing validation tools already do. The second applies hand-authored logical rules to catch cross-field violations like the date problem above: deterministic binary checks that either pass or fail. The third, the drift detector, works like a control chart in a factory: it keeps a record of what normal output has looked like over time, then raises a flag when the current batch starts looking meaningfully different. If a model is quietly updated, or a prompt is changed, or the temperature setting drifts, the outputs shift in ways no individual record would reveal. The drift detector catches the pattern across records that individual validation cannot see. The fourth aggregates these signals into a confidence score, routing records below threshold into a quarantine queue rather than passing them downstream unchecked. Every decision, whether pass, flag, or quarantine, is logged with a full explanation: which rule fired, which fields were involved, and what the conflict was.
 
 None of these stages ask the language model to evaluate itself. The logic is external, deterministic, and auditable by design.
 
 ---
 
-**Inside the Rule Engine -- How a Constraint Actually Fires**
+**Inside the Rule Engine: How a Constraint Actually Fires**
 
 The semantic validator is the layer that catches what schema validation cannot. Here is exactly what happens when a record arrives and a rule fires, from field extraction through to the audit log entry written on the other side.
 
-![SchemaGuard Rule Engine -- Step by Step](rule_engine_svg.svg)
+![SchemaGuard Rule Engine: Step by Step](rule_engine_svg.svg)
 
 *Step 1: fields are extracted from the incoming record. Step 2: the rule registry matches the field set to the relevant constraint. Step 3: the rule is evaluated as a deterministic binary check, true or false, no interpretation. Step 4: the decision, the fields involved, the values, and the confidence score are written to a structured audit log. If the record fails, it routes to quarantine with a full explanation attached.*
 
@@ -94,13 +94,13 @@ The pipeline does not stop the model from being wrong. It stops the wrongness fr
 
 **Reflection**
 
-The opening originally moved too quickly from the database entry to abstraction, bypassing the most important beat: what the corrupted record actually did once it arrived. Adding the population health system's learning behavior made the consequence concrete enough to carry the rest of the piece. An earlier draft of the system-description paragraph buried the drift detector in a list clause; pulling it into its own sentence with the factory control-chart analogy was the single most useful structural change in revision. The diagram stayed where it was, that placement was already correct.
+The opening originally moved too quickly from the database entry to abstraction, bypassing the most important beat: what the corrupted record actually did once it arrived. Adding the population health system's learning behavior made the consequence concrete enough to carry the rest of the piece. An earlier draft of the system-description paragraph buried the drift detector in a list clause; pulling it into its own sentence with the factory control-chart analogy was the single most useful structural change in revision. The diagram stayed where it was, as that placement was already correct.
 
 ---
 
 # Wait, Can't ChatGPT Just Double-Check Its Own Work?
 
-*A patient was diagnosed before they were born. The software thought everything was fine. Here's why that's a much harder problem than it sounds, and what someone is building to fix it.*
+*A patient was diagnosed before they were born. The software thought everything was fine. Here is why that is a much harder problem than it sounds, and what someone is building to fix it.*
 
 ---
 
@@ -108,7 +108,7 @@ Let's start with a weird question: **If an AI writes you a perfect-looking sprea
 
 Not impossible like "these don't add up." Impossible like: *this person was diagnosed with a condition four years before they were born.* All the formatting is correct. All the fields are present. The dates look like dates. The spreadsheet opens fine. And somewhere downstream, a medical system is now learning from a record that cannot exist.
 
-No alarm went off. No error message appeared. The data just... moved through the pipeline and became infrastructure.
+No alarm went off. No error message appeared. The data just moved through the pipeline and became infrastructure.
 
 This is the problem SchemaGuard is being built to solve. And before we get into how it works, we need to understand why the obvious solutions don't actually work.
 
@@ -118,11 +118,11 @@ This is the problem SchemaGuard is being built to solve. And before we get into 
 
 Yeah. This was my first thought too.
 
-You write a system prompt. You add a line: *Before returning data, verify that all dates are logically consistent.* Maybe you chain a second AI call, use one model to generate, another to review. Seems reasonable.
+You write a system prompt. You add a line: *Before returning data, verify that all dates are logically consistent.* Maybe you chain a second AI call, using one model to generate and another to review. Seems reasonable.
 
 Here's the uncomfortable part: it doesn't work reliably enough to count on.
 
-A language model reviewing its own output is still a language model. It's a system that has learned to produce things that *look plausible*, and a date that looks plausible individually will often survive the model's own self-review, because the model doesn't experience it as wrong. The inconsistency has to be subtle enough to slip through in the first place, which means it's exactly the kind of inconsistency the model is least equipped to catch when asked to look again.
+A language model reviewing its own output is still a language model. It is a system that has learned to produce things that *look plausible*, and a date that looks plausible individually will often survive the model's own self-review, because the model doesn't experience it as wrong. The inconsistency has to be subtle enough to slip through in the first place, which means it is exactly the kind of inconsistency the model is least equipped to catch when asked to look again.
 
 You're not adding a logic layer. You're adding another roll of the same dice.
 
@@ -146,13 +146,13 @@ There isn't. That's worth saying clearly before we go further.
 
 SchemaGuard catches what you explicitly define as catchable. It applies rules that a human wrote, to fields that a human specified, in domains that a human understood well enough to model. It does not learn new rules on its own. It does not generalize to scenarios nobody anticipated. Every new industry, every new schema, every new deployment context requires someone to sit down and author the constraints from scratch. If the rule-writer's domain knowledge has a blind spot, the system has that blind spot too.
 
-This is a real limitation. It's also the honest version of what "deterministic validation" actually means.
+This is a real limitation. It is also the honest version of what "deterministic validation" actually means.
 
 ---
 
-> **TL;DR -- Things are getting technical. Here's where we are:**
+> **TL;DR: Things are getting technical. Here's where we are.**
 >
-> Language models produce structured data (JSON, basically, named fields with values). Standard software checks confirm the data *has the right shape*. What it doesn't check: whether the values *make sense together*. A birth date and a diagnosis date that contradict each other will both pass shape-checking just fine. SchemaGuard is a separate layer that applies explicit logical rules to catch the contradiction. It doesn't ask the model. It checks independently.
+> Language models produce structured data (JSON, basically: named fields with values). Standard software checks confirm the data *has the right shape*. What it doesn't check: whether the values *make sense together*. A birth date and a diagnosis date that contradict each other will both pass shape-checking just fine. SchemaGuard is a separate layer that applies explicit logical rules to catch the contradiction. It doesn't ask the model. It checks independently.
 
 ---
 
@@ -166,7 +166,7 @@ Think of it as a slow, careful person reading every record and asking the questi
 
 A **silent failure** is defined precisely: it parses without error, passes schema validation, and violates at least one cross-field logical rule. The diagnosis-before-birth example qualifies. A loan approval that exceeds an applicant's stated annual income by a factor of fifty qualifies. A configuration object that simultaneously enables read-only mode and active write permissions qualifies.
 
-The rules that catch these failures are written *before* the test runs. Not reverse-engineered from the results. This matters because it's very easy to build a system that looks good on paper by tuning the rules until the numbers come out right. That's not validation, that's circular reasoning with extra steps.
+The rules that catch these failures are written *before* the test runs. Not reverse-engineered from the results. This matters because it is very easy to build a system that looks good on paper by tuning the rules until the numbers come out right. That's not validation, that's circular reasoning with extra steps.
 
 ```
 What "ground truth" means in plain English:
@@ -174,12 +174,12 @@ What "ground truth" means in plain English:
   +------------------------------------------------------+
   |  A record is "valid" only if it passes BOTH:         |
   |                                                      |
-  |  + Structure check -- right fields, right types      |
+  |  + Structure check: right fields, right types        |
   |                                                      |
-  |  + Sense check    -- values coherent with each other |
-  |                       (birth before diagnosis,       |
-  |                        income before loan amount,    |
-  |                        read/write modes compatible)  |
+  |  + Sense check: values coherent with each other      |
+  |                  (birth before diagnosis,            |
+  |                   income before loan amount,         |
+  |                   read/write modes compatible)       |
   |                                                      |
   |  Passing one and failing the other = silent failure  |
   +------------------------------------------------------+
@@ -187,7 +187,7 @@ What "ground truth" means in plain English:
 
 ---
 
-## The ethics part -- and it's not the part you expect.
+## The ethics part: and it's not the part you expect.
 
 The obvious data privacy question has a clean answer: SchemaGuard doesn't use personal records. The evaluation dataset is synthetic, AI-generated, human-verified, built from scratch. No real patient files. No real financial records.
 
