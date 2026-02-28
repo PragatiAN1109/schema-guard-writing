@@ -49,25 +49,24 @@ SchemaGuard is a validation pipeline that wraps around a language model's struct
 │  LLM Output                                                 │
 │      │                                                      │
 │      ▼                                                      │
-│  [1] Schema Validator     ← Did the fields arrive?         │
-│      │                       Are the types right?          │
+│  [1] Schema Validator     ← Did the fields arrive?          │
+│      │                       Are the types right?           │
 │      ▼                                                      │
-│  [2] Semantic Validator   ← Do the fields make sense       │
-│      │                       together? (deterministic)     │
+│  [2] Semantic Validator   ← Do the fields make sense        │
+│      │                       together? (deterministic)      │
 │      ▼                                                      │
-│  [3] Drift Detector       ← Have outputs shifted from      │
-│      │                       historical baseline?          │
+│  [3] Drift Detector       ← Have outputs shifted from       │
+│      │                       historical baseline?           │
 │      ▼                                                      │
-│  [4] Confidence Scorer    ← How much should downstream     │
-│      │                       systems trust this record?    │
+│  [4] Confidence Scorer    ← How much should downstream      │
+│      │                       systems trust this record?     │
 │      ▼                                                      │
-│  Output API  ──────────────────────► Trusted Data          │
+│  Output API  ──────────────────────► Trusted Data           │
 │                │                                            │
-│                └──── Low confidence ──► Quarantine Queue   │
+│                └──── Low confidence ──► Quarantine Queue    │
 └─────────────────────────────────────────────────────────────┘
 
-          For a general reader: Think of it as a quality-control
-          checkpoint between "AI produced it" and "we act on it."
+For a general reader: Think of it as a quality-control checkpoint between "AI produced it" and "we act on it."
 ```
 
 The first check confirms structural correctness — what existing validation tools already do. The second applies hand-authored logical rules to catch cross-field violations like the date problem above: deterministic binary checks that either pass or fail. The third — the drift detector — works like a control chart in a factory: it keeps a record of what normal output has looked like over time, then raises a flag when the current batch starts looking meaningfully different. If a model is quietly updated, or a prompt is changed, or the temperature setting drifts, the outputs shift in ways no individual record would reveal. The drift detector catches the pattern across records that individual validation cannot see. The fourth aggregates these signals into a confidence score, routing records below threshold into a quarantine queue rather than passing them downstream unchecked. Every decision — pass, flag, quarantine — is logged with a full explanation: which rule fired, which fields were involved, what the conflict was.
@@ -82,7 +81,10 @@ The semantic validator is the layer that catches what schema validation cannot. 
 
 ![SchemaGuard Rule Engine — Step by Step](rule_engine_svg.svg)
 
-*Step 1: fields are extracted from the incoming record. Step 2: the rule registry matches the field set to the relevant constraint. Step 3: the rule is evaluated as a deterministic binary check — true or false, no interpretation. Step 4: the decision, the fields involved, the values, and the confidence score are written to a structured audit log. If the record fails, it routes to quarantine with a full explanation attached.*
+* Step 1: fields are extracted from the incoming record. 
+* Step 2: the rule registry matches the field set to the relevant constraint. 
+* Step 3: the rule is evaluated as a deterministic binary check — true or false, no interpretation.
+* Step 4: the decision, the fields involved, the values, and the confidence score are written to a structured audit log. If the record fails, it routes to quarantine with a full explanation attached.*
 
 ---
 
